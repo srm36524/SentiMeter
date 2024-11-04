@@ -1,0 +1,65 @@
+import pandas as pd
+import plotly.express as px
+from flask import Flask, jsonify, request
+from google_play_scraper import reviews
+from textblob import TextBlob
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
+app_info = {
+    'com.grofers.customerapp': 'Blinkit',
+    'com.zeptoconsumerapp': 'Zepto',
+    'com.bigbasket.mobileapp': 'Bigbasket',
+    'com.dunzo.user': 'Dunzo',
+    'com.jpl.jiomart': 'JioMart'
+}
+
+def fetch_reviews(app_id, num_reviews=100):
+    """Fetch reviews from Google Play Store."""
+    reviews_batch, _ = reviews(app_id, count=num_reviews)
+    df_batch = pd.DataFrame(reviews_batch)
+    return df_batch
+
+def analyze_sentiment(df):
+    """Analyze sentiment of reviews."""
+    analyzer = SentimentIntensityAnalyzer()
+    df['textblob_sentiment'] = df['content'].apply(lambda x: TextBlob(x).sentiment.polarity)
+    df['vader_sentiment'] = df['content'].apply(lambda x: analyzer.polarity_scores(x)['compound'])
+    return df
+
+def visualize_data(df):
+    """Generate visualizations for the reviews data."""
+    if df.empty:
+        return "No data available for visualization."
+
+    avg_rating = df['score'].mean()
+    fig_dist = px.histogram(df, x='score', title='Rating Distribution', labels={'score': 'Rating'})
+
+    avg_textblob_sentiment = df['textblob_sentiment'].mean()
+    avg_vader_sentiment = df['vader_sentiment'].mean()
+
+    fig_sentiment = px.histogram(df, x='vader_sentiment', title='Sentiment Score Distribution')
+
+    return {
+        "average_rating": avg_rating,
+        "rating_distribution": fig_dist.to_json(),
+        "average_textblob_sentiment": avg_textblob_sentiment,
+        "average_vader_sentiment": avg_vader_sentiment,
+        "sentiment_distribution": fig_sentiment.to_json()
+    }
+
+def handler(request):
+    if request.method == 'POST':
+        app_id = request.json.get('app_id')
+        num_reviews = request.json.get('num_reviews', 100)
+
+        df = fetch_reviews(app_id, num_reviews)
+        df = analyze_sentiment(df)
+        visualization_data = visualize_data(df)
+
+        return jsonify(visualization_data)
+
+    return jsonify({"error": "Method not allowed."}), 405
+
+# The following line is only needed for local development.
+if __name__ == "__main__":
+    app.run(port=5000)
