@@ -1,0 +1,6 @@
+Flask
+pandas
+plotly
+google-play-scraper
+textblob
+vaderSentiment
