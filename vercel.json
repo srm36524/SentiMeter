@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/fetch_reviews.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/fetch_reviews",
+      "methods": ["POST"],
+      "dest": "api/fetch_reviews.py"
+    }
+  ]
+}
