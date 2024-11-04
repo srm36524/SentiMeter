@@ -12,5 +12,6 @@
       "methods": ["POST"],
       "dest": "api/fetch_reviews.py"
     }
+    { "rewrites": [{ "source": "/(.*)", "destination": "/" }] }
   ]
 }
